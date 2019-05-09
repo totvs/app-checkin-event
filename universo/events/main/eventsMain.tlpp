@@ -1,0 +1,46 @@
+namespace tlpp.events.Main
+Using Namespace tlpp.torm.cli
+
+/*Using Namespace tlpp.torm.cli
+Using namespace tlpp.torm.cli.db
+Using namespace tlpp.torm.cli.user
+
+Using namespace samples.torm
+Using namespace samples.torm.models.emitente */
+
+Main Function eventsMain()
+
+	U_eventsCreateProject()
+
+	U_eventsCreateModel()
+	
+	//U_eventsExecuteMigrate()
+	
+Return
+
+User Function eventsCreateProject()
+	UserInterface():ExecuteCommand(StrTokArr("generate:project --name events --path C:\Tdm\universo\config --timestamp .F. --pk uuid", " "))
+Return 
+
+User Function eventsCreateModel()
+	UserInterface():ExecuteCommand(StrTokArr("generate:model --name events --attrs event_code:varchar,event_name:varchar,event_description:varchar,event_initial_hour:date,event_total_hour:time,event_room:varchar", " "))	
+Return
+
+User Function eventsExecuteMigration()
+	UserInterface():ExecuteCommand(StrTokArr("db:migrate:up", " "))
+Return
+
+/*
+
+User Function InsereEmitente()
+	Local cCodEmitente := 1
+	Local cNomEmitente := "TOTVS S.A."
+
+	Local control := EmitenteController():New()
+	Local oEmitente
+	
+	oEmitente := Emitente():New(1, cCodEmitente, cNomEmitente)
+	control:save(oEmitente)
+
+Return*/
+
