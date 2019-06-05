@@ -1,0 +1,2 @@
+#include "tlpp-object.th"
+#define CRLF Chr(13)+Chr(10)

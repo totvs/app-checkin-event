@@ -1,0 +1,22 @@
+@annotation Get
+    endpoint as char 
+    description as char default ""    
+@end
+@annotation Put
+    endpoint as char 
+    description as char default ""    
+@end
+@annotation Patch
+    endpoint as char 
+    description as char default ""    
+@end
+@annotation Post
+    endpoint as char
+    description as char default ""    
+@end
+@annotation Delete
+    endpoint as char
+    description as char default ""    
+@end
+@annotation AuthGuard       
+@end

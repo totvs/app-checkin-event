@@ -1,40 +1,39 @@
-# app-checkin-event
-Tlpp List Events :: Eventos
-Webservice que fornece a listagem dos eventos referentes a agenda do evento Universo Totvs.
+# *app-checkin-event*
 
-Modo de uso
-Incluir a biblioteca como dependÃªncia no pom.xml da aplicaÃ§Ã£o:
+# *_Este arquivo está em atualização_*  
 
-<dependency>
-    <groupId>com.totvs.tjf</groupId>
-    <artifactId>tjf-checkin-signup</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-</dependency>
-ConfiguraÃ§Ãµes (application.yml)
-No arquivo de configuraÃ§Ãµes src/main/resources/application.yml teremos configurado as informaÃ§Ãµes do banco de dados (PostgreSQL):
 
-spring:
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/checkin
-    username: checkin
-    password: checkin!123
-OBS: Deve ser alterado de acordo com o banco criado.
+## **_getListEvents_**  
+>Webservice que fornece a listagem dos eventos referentes a agenda do evento Universo Totvs desenvolvido em TLPP utilizando o serviço REST atual nativo do AppServer.  
 
-Subindo o ServiÃ§o
-Para subirmos o serviÃ§o, basta executar como Spring Boot App.
+## **_Modo de uso_**  
+>????
+  
 
-Enviando para o Endpoint
-De acordo com as configuraÃ§Ãµes, o serviÃ§o serÃ¡ exposto na URL http://localhost:8180/api/v1/checkin, sendo necessÃ¡rio enviar um POST, conforme exemplo a seguir:
+## **_Configurações (verificar)_**  
+>???
 
-{
-	"email": "participante@email.com",
-	"code_event": "CÃ³digoDoEvento",
-	"date":"2019-06-04T00:00:00Z"
-}
-Os campos email e code_event sÃ£o do tipo texto (String) e sÃ£o obrigatÃ³rios.
-ValidaÃ§Ãµes
-O serviÃ§o valida caso o mesmo Email jÃ¡ tenha sido informado no evento.
+```
+Bloco de código:  
+    {
+      }
+```  
 
-LicenÃ§a
-Copyright Â© 2019 by TOTVS
+
+**OBS: Deve ser alterado de acordo com o banco criado.**
+
+## **_Subindo o Serviço_**  
+Para subirmos o serviço, basta executar ???
+
+## **_Enviando para o Endpoint_** 
+De acordo com as configurações, o serviço será exposto na URL  
+http://localhost:8180/api/v1/events  
+sendo necessário enviar o _GET_, conforme exemplo a seguir:
+
+http://localhost:8180/api/v1/events/?CODIGO_EVENTO=000001&DESCRICAO=Description&NOME_EVENTO=nome
+
+Sempre enviando os campos e o conteúdo a ser pesquisado.  
+Caso seja enviado um _GET_ desta forma : http://localhost:8180/api/v1/events , serão pesquisados e listados todo o conteúdo da tabela.
+
+## **_Licença_**
+Copyright © 2019 by  **TOTVS**
