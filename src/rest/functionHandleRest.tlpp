@@ -1,0 +1,29 @@
+#include 'tlpp-core.th'
+
+using namespace	tlpp.rest
+
+
+//-------------------------------------------------------------------
+/*/{tlpp.doc} handleRest
+
+@description
+Função da Handle do WebService REST implementado no appserver
+
+@author  denardi
+@since   05/2019
+
+@param	 integer, thPId, Process ID
+
+/*/
+//-------------------------------------------------------------------
+function handleRest( thPId )
+
+	local oHttpSrv
+
+	oHttpSrv := handleHttp():new( thPId )
+		oHttpSrv:handle()
+
+	oHttpSrv:destroy()
+	FreeObj( oHttpSrv )
+
+return .T.

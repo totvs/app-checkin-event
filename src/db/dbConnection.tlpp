@@ -1,0 +1,419 @@
+#include "tlpp-core.th"
+
+//-------------------------------------------------------------------
+/*/{Tlpp.doc} Classe dbConnection
+Classe responsável por criar o objeto de conexão com o DbAcess.
+@author  Egidio
+@since   27/11/2018
+@version 1.0
+@lastUpdate Egidio
+@dateUpdate 08/04/2019
+/*/
+//-------------------------------------------------------------------
+namespace src.db
+
+Class dbConnection 
+
+    //Propriedades Publicas
+    Public Data cIniName 
+    Public Data cDbDatabase
+    Public Data cDbAlias
+    Public Data cEnvironment
+    Public Data cDbServer
+    Public Data cDbRDD
+    Public Data nPort
+    Public Data aIniSession
+    Public Data aDbConnected
+    Public Data aStruct
+    
+    //Propriedades Privadas
+    Data aAuxSession
+    Data aConnections
+    Data nHndl
+
+    //Metodos Publicos
+    Public Method New() 
+    Public Method DbConnect()
+    Public Method DbDisconnect(_nIndex)
+    Public Method DbAddConnected(_lAdd)
+    Public Method DbFind(_cQuery)
+    Public Method DbExecute(_cInstruct)
+    Public Method DbGetInfos(_aInfos)
+    Public Method CreateExtensions()  
+
+    //Metodos Staticos
+    Static Method TryConnection(nTry)
+
+EndClass
+
+//--------------------------------------------------------------------------------------------------------------------
+/*/{Tlpp.doc} Method New
+Metodo responsável por criar o objeto. Já inicia as propriedades que serão usadas nos demais métodos quando evocados.
+@author  Egidio 
+@since   27/11/2018
+@version 1.0
+/*/
+//-----------------------------------------------------------------------------------------------------------------------
+Method New() Class dbConnection
+
+    ::cIniName      := GetSrvIniName()
+    ::cDbDatabase   := ''
+    ::cDbServer     := ''
+    ::cDbAlias      := ''
+    ::cEnvironment  := GetEnvServer()
+    ::nPort         := 7890
+    ::cDbRDD        := RealRdd()
+    ::aIniSession   := GetINISessions(Upper(::cIniName)) 
+    ::aAuxSession   := {{Upper(::cEnvironment),'DBDATABASE','DBALIAS','DBSERVER','DBPORT',::cDbRDD},{'DBACCESS','DATABASE','ALIAS','SERVER','PORT',::cDbRDD}}
+    ::aDbConnected  := {}
+    ::aConnections  := {}
+    ::aStruct       := {}
+    ::nHndl         := -1
+
+    ::DbGetInfos()
+    ::DbConnect()
+        
+return self
+
+//-----------------------------------------------------------------------------------------------------------
+/*/{Protheus.doc} Method GetInfos
+metodo responsável por popular a propriedade ::aConnections para que as conexões via dbAcces sejam efetuadas
+@author  Egidio
+@since   10/12/2018
+@version 1.0
+@Obs     A estrutura da array _aInfos deve ser a mesma da propriedade aConnections
+         aConnections[n,1] = Database/AliasDB ("MSSQL/TESTE")
+         aConnections[n,2] = Endereço do servidor ("LocalHost")
+         aConnections[n,3] = Porta de conexão do server(7890)
+/*/
+//-----------------------------------------------------------------------------------------------------------
+Method DbGetInfos(_aInfos) Class dbConnection
+
+    Local _nScan    := 0
+    Local _nA       := 0
+    
+    If Len(::aIniSession) > 0
+        For _nA := 1 to  Len(::aAuxSession)   
+            If (_nScan := aScan(::aIniSession,{|x,y| Upper(x) == ::aAuxSession[_nA,1]})) > 0
+                ::cDbDatabase := GetPvProfString(::aIniSession[_nScan] /*cSecao*/, ::aAuxSession[_nA,2] /*cChave*/, 'DEFAULT' /*cPadrao*/, ::cIniName/*cServerIni*/ )
+                ::cDbAlias    := GetPvProfString(::aIniSession[_nScan] /*cSecao*/, ::aAuxSession[_nA,3]  /*cChave*/, 'DEFAULT' /*cPadrao*/, ::cIniName/*cServerIni*/ )
+                ::cDbServer   := GetPvProfString(::aIniSession[_nScan] /*cSecao*/, ::aAuxSession[_nA,4]  /*cChave*/, 'DEFAULT' /*cPadrao*/,::cIniName/*cServerIni*/ )
+                ::nPort       := Val(GetPvProfString(::aIniSession[_nScan] /*cSecao*/, ::aAuxSession[_nA,5]  /*cChave*/, '7890' /*nPadrao*/,::cIniName/*cServerIni*/ ))
+                aAdd(::aConnections,{::cDbDatabase+"/"+::cDbAlias,::cDbServer,::nPort})
+            EndIf
+        Next _nA
+    EndIf
+    
+    If Valtype(_aInfos) == "A" .And. Len(_aInfos) > 0 
+        For _nA := 1 to Len(_aInfos) 
+            aAdd(::aConnections,_aInfos[_nA])
+        Next _nA
+    EndIf
+
+Return
+
+//--------------------------------------------------------------------------------------------------------------------------------------
+/*/{Tlpp.doc} Method Connnect
+Metodo responsável por efetuar as conexões com o DBAcces e evocar o metodo DbAddConnected que guarda as conexões que foram efetuadas 
+@author  Egidio
+@since   27/11/2018
+@version 1.0
+@lastUpdate Egidio
+@dateUpdated 05/04/2019
+/*/
+//---------------------------------------------------------------------------------------------------------------------------------------
+Method DbConnect() Class dbConnection
+
+    Local _nA       := 0
+    Local _cDbType  := ""
+
+    If Len(::aConnections) > 0
+        For _nA := 1 to  Len(::aConnections)  
+            If ::aConnections[_nA,1] <> "DEFAULT"
+                ::nHndl := TcLink(::aConnections[_nA,1], ::aConnections[_nA,2], ::aConnections[_nA,3])
+                If ::nHndl >= 0
+                    _cDbType := TcGetDb()
+                    ::DbAddConnected({::aConnections[_nA,1], ::aConnections[_nA,2], ::aConnections[_nA,3],::nHndl,_cDbType})
+                    ::CreateExtensions()
+                EndIf
+            EndIf 
+        Next _nA
+    EndIf
+Return 
+
+//-------------------------------------------------------------------
+/*/{Tlpp.doc} Method Disconnect
+Metodo responsável por encerrar a conexão com o banco de dados.
+@author  Egidio
+@since   27/11/2018
+@version 1.0
+@param   _nIndex - Numerico - Indica a posição dentro da propriedade ::aDbConnected da conexão a ser desconectada.
+@obs     O parametro _nIndex não é obrigatório, quando não enviado todas as conexões são desativadas.
+/*/
+//-------------------------------------------------------------------
+Method DbDisconnect(_nIndex) Class dbConnection
+
+    Local _lRet := .F.
+
+     _lRet := TcUnlink(iIf(_nIndex <> Nil,::aDbConnected[_nIndex,4],_nIndex))
+
+Return _lRet
+
+//---------------------------------------------------------------------------------------------------------------------------------
+/*/{Tlpp.doc} Method DbAddConnected
+Metodo responsável por armazenar as conexões efetivadas com o(s) banco(s) de dados 
+@author  Egidio
+@since   28/11/2018
+@version 1.0
+@param   _aConn - Array - Array contendo dados da conexão que foi efetuada e dever ser guardada na propriedade ::aDbConnected
+        _aConn[1] -> Nomenclatura do banco Ex: "POSTGRES/Postgresvm"
+        _aConn[2] -> Endereço do banco de dados Ex: "172.16.93.20"
+        _aConn[3] -> Porta de conexão Ex: 7890
+        _aConn[4] -> Handle da conexão
+        _aConn[5] -> Tipo do banco de dados Ex: "POSTGRES"
+@obs    Este método popula a propriedade ::aDbConnected e o formato deste propriedade é o mesmo do parametro _aConn citado acima
+       "POSTGRES/Postgresvm","Localhost",7890
+/*/
+//--------------------------------------------------------------------------------------------------------------------------------
+Method DbAddConnected(_aConn) Class dbConnection
+
+    Local _nScan := 0
+    
+    //Validando para não incluir conexões em duplicidade.
+    If (_nScan := aScan(::aDbConnected,{|x,y| Upper(x[1]) == Upper(_aConn[1]) .And. Upper(x[2]) == Upper(_aConn[2]) .And. x[3] == Upper(_aConn[3]) })) == 0
+        aAdd(::aDbConnected,_aConn)
+    EndIf
+
+Return
+
+//-------------------------------------------------------------------------------------------------------------------------------------------
+/*/{Tlpp.doc} Method DbFind
+Metodo responsável por retornar o resultado da consulta ao BD conforme a instrução SQL recebida.
+@author  Egidio
+@since   17/12/2018
+@version 1.0
+@param   _cQuery - Character - String contendo uma instrução de uma view em formato SQL previamente formatada de acordo com o SGBD utilizado.
+@update by Egidio
+@update date 05/2019
+@param lFields  - Boolean - Quando .T. retorna apenas o resultado da select sem a estrutura da tabela. Quando .F. ou Nil  retorna os valores da select juntamente com o resultado da select
+@param lWs      - Boolean - Quando .T. indica que a chamada foi feita a partir de WS e o retorno deve ser do tipo String em formato jSon.
+@return  _xRet   - Variable  - Objeto JSON quando a solicitação não vier de WS e String em formato jSon quando a solicitação vier via WS.
+@obs     Formato do objeto Json de retorno: 
+{
+	1: [ -> nro da linha
+		{ -> Array com os campos solicitados na consulta
+			"Title": "Codigo", ->Nome do campo
+			"Type": "Integer", ->Tipo do campo
+			"Limit": "004", -> Tamanho do campo
+            "Precision" : "0" -> Qtde de casas decimais, quando existir este valor será maior que zero
+			"Value": "0001" -> Valor do campo obtido na consulta0
+		}
+	]
+}
+/*/
+//--------------------------------------------------------------------------------------------------------------------------------------------
+//todo - Refatorar por conta da forma do objeto jSon de retorno, seguir a forma com que está o retorno em String.
+
+Method DbFind(_cQuery,lFields,lWs) Class dbConnection
+
+    Local _cRet     := '{'
+    Local _xRet     := ''
+    Local _cAlias   := NextAlias()
+    Local _nA       := 0
+    Local _aRet     := {}
+    
+    If ValType(_cQuery) <> 'C' .Or. Empty(_cQuery)
+        Conout("dbConnection:DbFind => Não foram enviados dados validos para efetuar a consulta !")
+        Return Nil
+    EndIf
+    
+    If !lWs .Or. lWs == Nil
+        _xRet :=  JsonObject():new()    
+    EndIf
+
+    If ::nHndl >= 0 .And. TCIsConnected( ::nHndl )
+        //TCInternal( 31, "NATIVEDATE" )   
+        //Criando uma área de trabalho temporária para trabalhar com o retorno da consulta ao banco.
+        DBUseArea(.T., ::cDbRDD, TCGenQry(NIL,NIL,_cQuery), (_cAlias), .F., .T.)
+        
+        If (_cAlias)->( !Eof() ) 
+        
+            //Inicializando a propriedade para não correr o risco de ficar com algum tipo de lixo
+            ::aStruct := {}
+           
+            //Obtendo a estrutura dos campos envolvidos na consulta solicitada   
+            If Len(::aStruct := dbStruct()) == 0
+                ConOut("dbConnection:DbFind => Não existem estruturas de tabela disponíveis para efetuar a captura dos dados !")
+                (_cAlias)->(dbCloseArea())
+                Return _xRet
+            EndIf
+        Else 
+            (_cAlias)->( dbCloseArea() )
+            Return _xRet
+        EndIf
+
+        If !lFields .or. lFields == Nil
+            //Formatando a array com os campos para auxiliar na montagem da string de retorno em formato JSon.
+            aEval(::aStruct,{|x,y| aAdd(_aRet,{ ; //
+                            '"TITLE" : '+ '"'+AllTrim(x[1]) +'" ,', ; //Nome do campo
+                            '"TYPE"  : '+ '"'+AllTrim(x[2]) +'" ,', ; //Tipo do campo(N-Numeric, D-Data,C-Caracter,L-Logico,M-Memo)
+                            '"LIMIT" : '+ '"'+cValToChar(x[3]) + '" ,' , ; //Tamanho do campo(Para campos numericos aqui não está contido as casas decimais)
+                            '"PRECISION" : '+ '"' +cValToChar(x[4]) + '" ,' , ;//Quantidade de casas decimais
+                            '', ;//Valor do campo correspondente vindo da consulta
+                            FieldPos(x[1])}) ;//Posição ordinal do campo na tabela atual(utilizo para obter o valor do campo na consulta)
+                            })
+        EndIf
+
+        _nA := 1 // inicializando o contador para utilizar nas linhas.
+        While (_cAlias)->( !Eof() )
+            
+            If !lFields .or. lFields == Nil
+                _cRet += '"' + cValToChar(_nA) + '" : [ ' //hash de linha
+                //_oRet[cValToChar(_nA)] := [{}, {}] -> Proxima mudança a ser efetuada para evitar parser.
+
+                aEval(_aRet,{|x,y| x[Len(x)-1] := '"VALUE" : '+ '"' + Alltrim(cValToChar(FieldGet( x[Len(x)])))+'"'})//incluindo os valores dos campos nas respectivas posições conforme o retorno da consulta.
+
+                aEval(_aRet,{|x,y| _cRet += '{' + x[1] + x[2] + x[3] + x[4] + x[5] + '}' + If( y < Len(_aRet),',','')})//montando a string.
+            Else
+                _cRet += '"' + cValToChar(_nA) + '" : {' //hash de linha
+                aEval(::aStruct,{ |x,y| _cRet += '"'+ x[1] +'" :' + '"'+ Alltrim(CVALTOCHAR((_cAlias)->&(AllTrim(x[1])))) + '" ' + If( y < Len(::aStruct),',','') })
+            EndIf
+            _nA ++ // contador das linhas
+
+            (_cAlias)->( dbSkip() )
+
+            //condição para quebra de linhas da array
+            If (_cAlias)->(!Eof())
+                If !lFields .or. lFields == Nil
+                    _cRet +=  '],' 
+                Else
+                    _cRet +=  '},' 
+                EndIf    
+            Else
+                If !lFields .or. lFields == Nil
+                    _cRet +=  ']' 
+                Else
+                    _cRet +=  '}' 
+                EndIf    
+            EndIf
+        End While 
+        _cRet += '}' // finalizando a string.
+        //Convertendo a String pré formatada em um objeto JSon para retorno
+        If !lWs .or. lWs == Nil
+            _xRet:fromJson(_cRet)
+        else
+            _xRet := _cRet
+        EndIf
+        //Fechando a area de trabalho
+        //TCInternal( 31, "OFF" )
+        (_cAlias)->( dbCloseArea() )
+    Else    
+        ConOut( "dbConnection:DbFind => Não há conexões ativas para esta operação ou a conexão atual não é a mesma que está ativa !") 
+        Return Nil
+    EndIf    
+
+Return _xRet
+
+//----------------------------------------------------------------------------------------------------------------------
+/*/{Tlpp.doc} Method DbExecute
+Método responsável por executar a instrução recebida por parametro utilizando o comando TCSQEXEC utilizando Transactions
+@author  Egidio
+@since   26/12/2018
+@version 1.0
+@param   _cInstruct - Character - Instrução SQL que deverá estar pre-formatada para uso com o comando TCSQEXEC.
+@return  _lRet - Boolean - .T. caso toda a transação tenha sido executada com sucesso validada pelo banco de dados.
+@return  _lRet - Boolean - .F. caso ocorra algum erro na transação ou execução do comando.
+/*/
+//-----------------------------------------------------------------------------------------------------------------------
+Method DbExecute(_cInstruct) Class dbConnection
+
+    Local _lRet := .F.
+    Local _nRet := -1
+    
+    If ::nHndl >= 0 .And. TCIsConnected( ::nHndl )
+
+        If Empty(_cInstruct) .Or. ValType(_cInstruct) <> "C"
+            Conout("dbConnection:DbExecute => Não foram enviados dados validos para executar a instrucao !")
+            Return _lRet
+        EndIf
+        _nRet := TCSqlExec("Begin")
+        If _nRet >= 0
+            _nRet := TCSqlExec(_cInstruct)
+            If (_nRet < 0)
+                ConOut("dbConnection-DbExecute => Erro: " + TCSQLError() + " na execucao da instrucao !") 
+                _nRet := TcSqlExec("RollBack")
+            Else
+                _lRet := .T.
+                _nRet := TcSqlExec("Commit")
+            EndIf
+            If _nRet < 0
+                _lRet := .F.
+                Conout("dbConnection-DbExecute => Erro na finalizacao da transacao !")
+            EndIf
+        Else
+            Conout("dbConnection-DbExecute =>Não foi possivel inicializar o transaction" )
+        EndIf
+    Else
+        ConOut( "dbConnection:DbExecute => Não há conexões ativas para esta operação ou a conexão atual não é a mesma que está ativa !") 
+    EndIf
+
+Return _lRet
+
+//----------------------------------------------------------------------------
+/*/{Tlpp.doc} TryConnection
+Attempts to connect to the database
+@author  Egidio 
+@since   2019/02
+@version 1.0
+@obs     Loads the Public oConnection variable and connects to the database.
+/*/
+//-----------------------------------------------------------------------------
+Method TryConnection(nTry) class dbConnection
+
+    Local nI        := 0
+    Local lConn     := .F.
+
+    Default nTry    := 5
+
+    Public oConnection
+
+    For nI := 1 to nTry 
+        If(oConnection == NIL)
+            oConnection := DbConnection():New()
+        Endif
+        If oConnection <> Nil
+            lConn := .T.
+            oConnection:CreateExtensions()
+            Exit
+        Endif
+    Next nI
+
+Return lConn
+
+//-------------------------------------------------------
+/*/{Tlpp.doc} Method CreateExtensions
+Cria as extensões utilizadas pelo ORM no banco de dados.
+@author  Egidio
+@since   04/2019
+@version 1.0
+/*/
+//-------------------------------------------------------
+Method CreateExtensions() class dbConnection
+
+    Local cStatement    := ""
+    Local lRet          := .T.
+
+    If Upper(::cDbDatabase) == 'POSTGRES'
+        cStatement := 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'
+    EndIf
+
+    If !Empty(cStatement)
+        lRet := ::DbExecute(cStatement)
+		If !lRet 
+			Conout("dbConnection:CreateExtensions -> Error in executing the statement [ "+ cStatement +" ] !") 
+		EndIf
+    EndIf
+
+Return lRet
+
+

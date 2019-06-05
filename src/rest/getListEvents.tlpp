@@ -1,0 +1,92 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+Namespace src.rest
+Using namespace src.Db
+
+/*/{Tlpp.doc} Class getListEvents
+Class responsible for listing the events using the GET method via RES service.
+@author  Egidio Junior
+@since   05/2019
+/*/
+class getListEvents from LongclassName
+
+    // Private data
+    Private data cReturn
+
+	//Internal methods
+    public method new()
+
+	//Public methods
+    @Get("api/app-login/v1/events") // URI universo totvs
+    public method restGetListEvents(oRequest, oResponse)
+
+endclass
+
+/*/{Tlpp.doc} Method New
+Method responsible for initialize the class.
+@author  Egidio Junior
+@since   05/2019
+/*/
+method new() class getListEvents
+    dbConnection():TryConnection()
+    ::cReturn := ""
+return Self
+
+/*/{Tlpp.doc} Method restGetListEvents
+Method responsible for capturing requested data via application and returning the result in jSOn format.
+@author  Egidio Junior
+@since   05/2019
+/*/
+method restGetListEvents(oRequest, oResponse) class getListEvents
+
+    Local cStatement    := "Select descricao, sala,nome_evento,id,codigo_evento,to_char(tempototal,'HH24:MI:SS') tempototal,  to_char(datahorainicio,'DD-MM-YYYY HH24:MI:SS') datahorainicio,to_char(createdat,'DD-MM-YYYY HH24:MI:SS') createdat, to_char(updatedat,'DD-MM-YYYY HH24:MI:SS') updatedat from eventos "
+    Local cWhere        := " where "
+    Local aProperties   := {}
+    Local oCondition    := jsonObject():New()
+    Local oObjAux
+        
+    If Upper(oRequest:METHOD) <> "GET"
+        oResponse:Status := 500
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Internal server error. Method not recognized ! ')
+    EndIf
+   
+    If oRequest:PathParams == Nil .And. oRequest:Query == Nil
+        oResponse:Status := 400
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+    EndIf
+    
+    If ( oRequest:PathParams <> Nil )
+        If (ValType(oRequest:PathParams) <> "J")
+            oResponse:Status := 400
+            Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+        EndIf
+        oObjAux := oRequest:PathParams        
+    EndIf
+
+    If ( oRequest:Query <> Nil )
+        If (ValType(oRequest:Query) <> "J")
+            oResponse:Status := 400
+            Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+        EndIf
+        oObjAux := oRequest:Query
+    EndIf    
+
+    If oObjAux <> NIL .And. oConnection <> NIL .And. len(oConnection:aDbConnected) >= 1
+        aProperties := oObjAux:GetProperties()
+        
+        If Len(aProperties) > 0
+            oCondition  := {"NOME_EVENTO":"%","DESCRICAO":"%","SALA":"%"} 
+            cStatement += cWhere 
+            aEval(aProperties, {|x,y| cStatement += Upper(x) + iIf(oCondition:Hasproperty(x), " ILIKE '" + oCondition[x] + oObjAux[x] + oCondition[x] + "' ", + " = '" + oObjAux[x] + "' ") + iIf( y < Len(aProperties), ' AND ', " ")  } )
+        EndIf
+
+        ::cReturn := oConnection:DbFind(cStatement,.T.,.T.)
+        oConnection:DbDisconnect()
+        oResponse:Status := 200
+    else
+        oResponse:Status := 500
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Internal server error. ')
+    EndIf
+
+return oResponse:Send(::cReturn)
