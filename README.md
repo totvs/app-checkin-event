@@ -2,7 +2,6 @@
 
 # *_Este arquivo está em atualização_*  
 
-
 ## **_getListEvents_**  
 >Webservice que fornece a listagem dos eventos referentes a agenda do evento Universo Totvs desenvolvido em TLPP utilizando o serviço REST atual nativo do AppServer.  
 
