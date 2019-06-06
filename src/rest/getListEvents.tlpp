@@ -81,7 +81,6 @@ method restGetListEvents(oRequest, oResponse) class getListEvents
             aEval(aProperties, {|x,y| cStatement += Upper(x) + iIf(oCondition:Hasproperty(x), " ILIKE '" + oCondition[x] + oObjAux[x] + oCondition[x] + "' ", + " = '" + oObjAux[x] + "' ") + iIf( y < Len(aProperties), ' AND ', " ")  } )
         EndIf
         ::cReturn := oConnection:DbFind(cStatement,.T.,.T.)
-        oConnection:DbDisconnect()
         oResponse:Status := 200
     else
         oResponse:Status := 500

@@ -3,7 +3,7 @@
 # *_Este arquivo está em atualização_*  
 
 ## **_getListEvents_**  
->Webservice que fornece a listagem dos eventos referentes a agenda do evento Universo Totvs desenvolvido em TLPP utilizando o serviço REST atual nativo do AppServer.  
+>Webservice que fornece a listagem dos eventos referentes a agenda do evento Universo Totvs desenvolvido na linguagemmm TLPP utilizando o serviço REST atual nativo do AppServer.  
 
 ## **_Modo de uso_**  
 >????
@@ -25,14 +25,14 @@ Bloco de código:
 Para subirmos o serviço, basta executar ???
 
 ## **_Enviando para o Endpoint_** 
-De acordo com as configurações, o serviço será exposto na URL  
-http://localhost:8180/api/v1/events  
-sendo necessário enviar o _GET_, conforme exemplo a seguir:
+De acordo com as configurações, o serviço responde no seguinte endpoint:  
+**_/api/v1/event_**  
+Como se trata de um serviço do tipo _GET_ onde foi adotada a convenção **pathParam** e a _URI_ deve ser enviada conforme exemplo:  
 
-http://localhost:8180/api/v1/events/?CODIGO_EVENTO=000001&DESCRICAO=Description&NOME_EVENTO=nome
+http://localhost:8180/api/v1/event/?event_code=000001&description=Description&event_name=name
 
-Sempre enviando os campos e o conteúdo a ser pesquisado.  
-Caso seja enviado um _GET_ desta forma : http://localhost:8180/api/v1/events , serão pesquisados e listados todo o conteúdo da tabela.
+Quando necessário efetuar alguma seleção de dados, deve ser enviado os campos e o conteúdo a ser pesquisado conforme descrito para evitar erros no retorno na aplicação.  
+Caso seja enviado uma  _URI_ desta forma : http://localhost:8180/api/v1/event , será listado todo o conteúdo da tabela **_events_**.
 
 ## **_Licença_**
 Copyright © 2019 by  **TOTVS**
