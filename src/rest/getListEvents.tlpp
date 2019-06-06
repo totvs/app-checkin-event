@@ -40,7 +40,7 @@ Method responsible for capturing requested data via application and returning th
 /*/
 method restGetListEvents(oRequest, oResponse) class getListEvents
 
-    Local cStatement    := "Select descricao, sala,nome_evento,id,codigo_evento,to_char(tempototal,'HH24:MI:SS') tempototal,  to_char(datahorainicio,'DD-MM-YYYY HH24:MI:SS') datahorainicio,to_char(createdat,'DD-MM-YYYY HH24:MI:SS') createdat, to_char(updatedat,'DD-MM-YYYY HH24:MI:SS') updatedat from eventos "
+    Local cStatement    := "Select description, room, event_name,id,event_code,to_char(duration,'HH24:MI:SS') duration,  to_char(datetimestart,'DD-MM-YYYY HH24:MI:SS') datetimestart from events "
     Local cWhere        := " where "
     Local aProperties   := {}
     Local oCondition    := jsonObject():New()
@@ -76,11 +76,10 @@ method restGetListEvents(oRequest, oResponse) class getListEvents
         aProperties := oObjAux:GetProperties()
         
         If Len(aProperties) > 0
-            oCondition  := {"NOME_EVENTO":"%","DESCRICAO":"%","SALA":"%"} 
+            oCondition  := {"description" : "%", "room":"%", "event_name":"%","event_code":"%"} 
             cStatement += cWhere 
             aEval(aProperties, {|x,y| cStatement += Upper(x) + iIf(oCondition:Hasproperty(x), " ILIKE '" + oCondition[x] + oObjAux[x] + oCondition[x] + "' ", + " = '" + oObjAux[x] + "' ") + iIf( y < Len(aProperties), ' AND ', " ")  } )
         EndIf
-
         ::cReturn := oConnection:DbFind(cStatement,.T.,.T.)
         oConnection:DbDisconnect()
         oResponse:Status := 200
