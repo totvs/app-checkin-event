@@ -73,7 +73,7 @@ Será criado automaticamente no diretório ``/etc``
 "ODBC_POSTGRES_006=[NOME_ODBC]Port=PORTA_BANCO_DE_DADOS"
 ``
 
-#####NOTA
+##### NOTA
 > Para subir a aplicação respondendo para um banco de dados diferente do ``POSTGRES``, é necesário criar novas variáveis de ambiente, por exemplo:
 ``ODBC_MSSQL_001=[NOME_ODBC]Servername=IP_SERVIDOR_BANCO_DE_DADOS``
 
