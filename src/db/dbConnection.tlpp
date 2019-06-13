@@ -214,13 +214,15 @@ Metodo responsável por retornar o resultado da consulta ao BD conforme a instruç
 //--------------------------------------------------------------------------------------------------------------------------------------------
 //todo - Refatorar por conta da forma do objeto jSon de retorno, seguir a forma com que está o retorno em String.
 
-Method DbFind(_cQuery,lFields,lWs) Class dbConnection
+Method DbFind(_cQuery,lFields,lWs, cTable) Class dbConnection
 
     Local _cRet     := '{'
     Local _xRet     := ''
     Local _cAlias   := NextAlias()
     Local _nA       := 0
     Local _aRet     := {}
+
+    Default cTable := ''
     
     If ValType(_cQuery) <> 'C' .Or. Empty(_cQuery)
         Conout("dbConnection:DbFind => Não foram enviados dados validos para efetuar a consulta !")
@@ -231,6 +233,10 @@ Method DbFind(_cQuery,lFields,lWs) Class dbConnection
         _xRet :=  JsonObject():new()    
     EndIf
 
+    If !Empty(cTable) .And. !TcCanOpen(cTable)
+        Conout("dbConnection:DbFind => A tabela [" + cTable + "] não existe no banco de dados !")
+        Return _xRet
+    EndIf
     If ::nHndl >= 0 .And. TCIsConnected( ::nHndl )
         //TCInternal( 31, "NATIVEDATE" )   
         //Criando uma área de trabalho temporária para trabalhar com o retorno da consulta ao banco.
