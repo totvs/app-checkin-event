@@ -1,6 +1,8 @@
 FROM docker.totvs.io/totvs/dbaccess
 
 ADD dbaccess64 /totvs/tec/dbaccess/multi
+ENV DBACCESS_001="[General]LicenseServer=10.171.67.140"
+ENV DBACCESS_002="[General]LicensePort=5555"
 ENV DBACCESS_003="[General]Port=7890"
 ENV DBACCESS_004="[General]ODBC30=1"
 ENV DBACCESS_005="[General]ByYouProc=0"
