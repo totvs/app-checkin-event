@@ -1,0 +1,36 @@
+version: '3.3'
+ 
+services:
+  dbaccess:
+    image: docker.totvs.io/app-checkin/event_dbaccess:latest
+    container_name: event_dbaccess
+    environment:
+      - "DBACCESS_026=[POSTGRES/AppCheckinEvent]user=postgres"
+      - "DBACCESS_027=[POSTGRES/AppCheckinEvent]password=sa"
+      - "ODBC_POSTGRES_001=[AppCheckinEvent]Servername=172.16.93.20"
+      - "ODBC_POSTGRES_002=[AppCheckinEvent]Username=postgres"
+      - "ODBC_POSTGRES_004=[AppCheckinEvent]Database=postgres"
+      - "ODBC_POSTGRES_003=[AppCheckinEvent]Password=sa"
+      - "ODBC_POSTGRES_006=[AppCheckinEvent]Port=5432"
+    ports:
+      - 7890:7890
+    volumes:
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
+
+  appserver:
+    image: docker.totvs.io/app-checkin/event:latest
+    container_name: event
+    environment:
+      - "APPSERVER_009=[TLF]DBDATABASE=Postgres"
+      - "APPSERVER_010=[TLF]DBSERVER=dbaccess"
+      - "APPSERVER_011=[TLF]DBALIAS=AppCheckinEvent"
+      - "APPSERVER_012=[TLF]DBPORT=7890"  
+    ports:
+      - 5012:5012
+      - 9080:9080
+    links:
+      - dbaccess
+    volumes:
+      - /etc/timezone:/etc/timezone
+      - /etc/localtime:/etc/localtime
