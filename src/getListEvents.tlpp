@@ -1,0 +1,100 @@
+#include "tlpp-core.th"
+#include "tlpp-rest.th"
+
+Namespace src.rest
+Using namespace src.Db
+
+/*/{Tlpp.doc} Class getListEvents
+Class responsible for listing the events using the GET method via RES service.
+@author  Egidio Junior
+@since   05/2019
+/*/
+class getListEvents from LongclassName
+
+    // Private data
+    Private data cReturn
+
+	//Internal methods
+    public method new()
+
+	//Public methods
+    @Get("api/v1/event") // URI universo totvs
+    public method restGetListEvents(oRequest, oResponse)
+
+endclass
+
+/*/{Tlpp.doc} Method New
+Method responsible for initialize the class.
+@author  Egidio Junior
+@since   05/2019
+/*/
+method new() class getListEvents
+    dbConnection():TryConnection()
+    ::cReturn := ""
+return Self
+
+/*/{Tlpp.doc} Method restGetListEvents
+Method responsible for capturing requested data via application and returning the result in jSOn format.
+@author  Egidio Junior
+@since   05/2019
+/*/
+method restGetListEvents(oRequest, oResponse) class getListEvents
+
+    Local cStatement    := "Select description, room, event_name,id,event_code,to_char(duration,'HH24:MI:SS') duration,  to_char(datetimestart,'DD-MM-YYYY HH24:MI:SS') datetimestart from events "
+    Local cWhere        := " where "
+    Local aProperties   := {}
+    Local oCondition    := jsonObject():New()
+    Local oObjAux
+        
+    If Upper(oRequest:METHOD) <> "GET"
+        oResponse:Status := 501
+        Conout("Error: " + cValToChar(oResponse:Status) + " -> Foi enviado um método não suportado por esta aplicação !")
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Not Implemented ! ')
+    EndIf
+   
+    If oRequest:PathParams == Nil .And. oRequest:Query == Nil
+        oResponse:Status := 400
+        Conout("Error: " + cValToChar(oResponse:Status) + " -> Os parametros enviados estão nulos ou foram anulados pela aplicação que efetuou a solicitação !")
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+    EndIf
+    
+    If ( oRequest:PathParams <> Nil )
+        If (ValType(oRequest:PathParams) <> "J")
+            oResponse:Status := 400
+            Conout("Error: " + cValToChar(oResponse:Status) + " -> Os parametros enviados estão com um tipo não reconhecido pela aplicação !")
+            Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+        EndIf
+        oObjAux := oRequest:PathParams        
+    EndIf
+
+    If ( oRequest:Query <> Nil )
+        If (ValType(oRequest:Query) <> "J")
+            oResponse:Status := 400
+            Conout("Error: " + cValToChar(oResponse:Status) + " -> Os parametros enviados estão com um tipo não reconhecido pela aplicação !")
+            Return oResponse:Send(cValToChar(oResponse:Status) + ' Bad Request. ')
+        EndIf
+        oObjAux := oRequest:Query
+    EndIf    
+    
+    If oObjAux <> NIL .And. oConnection <> NIL .And. len(oConnection:aDbConnected) >= 1
+        aProperties := oObjAux:GetProperties()
+        
+        If Len(aProperties) > 0
+            oCondition  := {"description" : "%", "room":"%", "event_name":"%","event_code":"%"} 
+            cStatement += cWhere 
+            aEval(aProperties, {|x,y| cStatement += Upper(x) + iIf(oCondition:Hasproperty(x), " ILIKE '" + oCondition[x] + oObjAux[x] + oCondition[x] + "' ", + " = '" + oObjAux[x] + "' ") + iIf( y < Len(aProperties), ' AND ', " ")  } )
+        EndIf
+        ::cReturn := oConnection:DbFind(cStatement,.T.,.T.,'events')
+        oResponse:Status := 200
+        If Valtype(::cReturn) == 'U' .Or. Empty(::cReturn)
+            oResponse:Status := 406
+            Conout("Error: " + cValToChar(oResponse:Status) + " -> Não retornaram dados da consulta ao banco de dados !")
+            Return oResponse:Send(cValToChar(oResponse:Status) + ' Not Acceptable. ')
+        ENDIF
+    else
+        oResponse:Status := 503
+        Conout("Error: " + cValToChar(oResponse:Status) + " -> Não foi possivel conectar ao servidor do banco de dados -- DBACCESS --  ou nao existe conexão ao banco de dados !")
+        Return oResponse:Send(cValToChar(oResponse:Status) + ' Service Unavailable. ')
+    EndIf
+
+return oResponse:Send(::cReturn)
